@@ -5,6 +5,7 @@ const express = require("express");
 const app = express();
 const port = 3001;
 
+app.use(express.json())
 app.use(cors());
 app.use(cookieParser());
 app.use(express.urlencoded({ extends: true }));
@@ -44,6 +45,13 @@ const db = {
 // [GET] /api/posts
 app.get("/api/posts", (req, res) => {
   res.json(db.posts);
+});
+
+// [POST] /api/auth/login
+app.post("/api/auth/login", (req, res) => {
+  const { email, password } = req.body;
+  console.log(email, password);
+  res.json({});
 });
 
 // Listen port
