@@ -5,7 +5,7 @@ const express = require("express");
 const app = express();
 const port = 3001;
 
-app.use(express.json())
+app.use(express.json());
 app.use(cors());
 app.use(cookieParser());
 app.use(express.urlencoded({ extends: true }));
@@ -50,8 +50,16 @@ app.get("/api/posts", (req, res) => {
 // [POST] /api/auth/login
 app.post("/api/auth/login", (req, res) => {
   const { email, password } = req.body;
-  console.log(email, password);
-  res.json({});
+  const user = db.users.find(
+    (user) => user.email === email && user.password === password
+  );
+  if (!user) {
+    return res.status(401).json({
+      message: "Unauthorized",
+    });
+  }
+
+  res.json(user);
 });
 
 // Listen port
