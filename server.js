@@ -1,4 +1,6 @@
 const { name } = require("ejs");
+const fs = require("fs");
+const https = require("https");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const express = require("express");
@@ -6,7 +8,12 @@ const app = express();
 const port = 3001;
 
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 app.use(cookieParser());
 app.use(express.urlencoded({ extends: true }));
 
@@ -59,10 +66,44 @@ app.post("/api/auth/login", (req, res) => {
     });
   }
 
-  res.json(user);
+  const sessionId = Date.now().toString();
+  sessions[sessionId] = { sub: user.id };
+
+  res
+    .setHeader(
+      "Set-Cookie",
+      `sessionId=${sessionId}; httpOnly; max-age=3600; samesite=none; secure`
+    )
+    .json(user);
 });
 
-// Listen port
-app.listen(port, () => {
-  console.log(`Demo app is running on port ${port}`);
+// [GET] /api/auth/me
+app.get("/api/auth/me", (req, res) => {
+  const session = sessions[req.cookies.sessionId];
+  if (!session) {
+    return res.status(401).json({
+      message: "Unauthorized",
+    });
+  }
+
+  const user = db.users.find((user) => user.id === session.sub);
+  if (!user) {
+    return res.status(401).json({
+      message: "Unauthorized",
+    });
+  }
+
+  res.json({ user });
 });
+
+https
+  .createServer(
+    {
+      key: fs.readFileSync("freikishoucookie.com+2-key.pem"),
+      cert: fs.readFileSync("freikishoucookie.com+2.pem"),
+    },
+    app
+  )
+  .listen(port, () => {
+    console.log(`Demo app is running on port ${port}`);
+  });
